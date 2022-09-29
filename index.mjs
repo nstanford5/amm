@@ -24,10 +24,10 @@ const startSwappers = async (lpTok) => {
 		// opting in to tokens
 		await acc.tokenAccept(tokA.id);
 		await acc.tokenAccept(tokB.id);
-    await acc.tokenAccept(lpTok);
+		await acc.tokenAccept(lpTok);
 		// paying account tokens
-		await tokA.mint(acc, 1000);
-		await tokB.mint(acc, 1000);
+		await tokA.mint(acc, stdlib.parseCurrency(1000));
+		await tokB.mint(acc, stdlib.parseCurrency(1000));
 		swappers.push(acc);
 		// attaching api users to deployers contract
 		const ctc = acc.contract(backend, ctcDeployer.getInfo());
@@ -38,17 +38,17 @@ const startSwappers = async (lpTok) => {
 		console.log(
 			`${swapper} current bal of tokB is ${await acc.balanceOf(tokB.id)}`
 		);
-    console.log(
-      `${swapper} current bal of lpTok is ${await acc.balanceOf(lpTok)}`
-    );
+		console.log(
+			`${swapper} current bal of lpTok is ${await acc.balanceOf(lpTok)}`
+		);
 
 		try {
 			// depositing tokens to liquidity pool
 			const res = await ctc.apis.Swapper.deposit({
 				firstTok: tokA,
 				secondTok: tokB,
-				firstSupply: 10,
-				secondSupply: 20,
+				firstSupply: 100,
+				secondSupply: 100,
 			});
 			console.log(res);
 			console.log(
@@ -57,9 +57,9 @@ const startSwappers = async (lpTok) => {
 			console.log(
 				`${swapper} post bal of tokB is ${await acc.balanceOf(tokB.id)}`
 			);
-      console.log(
-        `${swapper} post bal of lpTok is ${await acc.balanceOf(lpTok)}`
-      );
+			console.log(
+				`${swapper} post bal of lpTok is ${await acc.balanceOf(lpTok)}`
+			);
 		} catch (err) {
 			console.log(`Error in deposit func = ${err}`);
 		}
@@ -109,13 +109,14 @@ const ctcDeployer = accDeployer.contract(backend);
 console.log(ctcDeployer);
 await ctcDeployer.participants.Deployer(
 	{
-		showTok: (tok) => {
-			console.log(parseInt(tok));
+		showLp: (uint) => {
+			console.log(parseInt(uint, 'uint'));
 		},
 		getTokens: [tokA.id, tokB.id],
 		swapReady: (lpTokId) => {
 			startSwappers(lpTokId);
 		},
+		...stdlib.hasConsoleLogger,
 	},
 	backend
 );

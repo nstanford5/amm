@@ -2,9 +2,10 @@
 
 export const main = Reach.App(() => {
 	const Deployer = Participant('Deployer', {
+		...hasConsoleLogger,
 		getTokens: Array(Token, 2),
 		swapReady: Fun([Token], Null),
-		showTok: Fun([Token], Null),
+		showLp: Fun([UInt], Null),
 	});
 
 	const supply = UInt.max;
@@ -32,11 +33,15 @@ export const main = Reach.App(() => {
 		['firstTok', Token],
 		['secondTok', Token],
 	]);
-
+	Deployer.interact.log(lpTok);
 	Deployer.interact.swapReady(lpTok);
 	const [LPtot, Abal, Bbal] = parallelReduce([0, 0, 0])
 		.paySpec([tokAID, tokBID])
-		.invariant(balance(lpTok) == supply - LPtot && balance(tokAID) == Abal && balance(tokBID) == Bbal)
+		.invariant(
+			balance(lpTok) == supply - LPtot &&
+				balance(tokAID) == Abal &&
+				balance(tokBID) == Bbal
+		)
 		.while(true)
 		.api_(SwapperApi.deposit, (obj) => {
 			const tokenStruct = tokenSupplyObj.fromObject(obj);
@@ -58,11 +63,38 @@ export const main = Reach.App(() => {
 					check(Bin != 0);
 					const AbalPrime = Abal + Ain;
 					const BbalPrime = Bbal + Bin;
-					const denominator = AbalPrime * BbalPrime;
-					const z = muldiv(Ain, Bin, denominator);
-					const LPout = LPtot == 0 ? sqrt(Ain * Bin) : muldiv(z, LPtot, 100);
+					const ABin = Ain * Bin; // 10000
+					const denominator = AbalPrime * BbalPrime; // 40000
+					// const mulZ = muldiv(Ain, Bin, AbalPrime * BbalPrime); //0.25
+
+					// const z = ABin / denominator; // 0.25 but shows 0
+					// cons mulz =
+					const zTimesLPtot = mul(Bin / denominator, LPtot);
+					// const final = zTimesLPtot / 100;
+
+					const LPout =
+						LPtot == 0
+							? sqrt(Ain * Bin)
+							: mul(
+									div(muldiv(Ain, Bin, mul(AbalPrime, BbalPrime)), 100),
+									LPtot
+							  );
+
+					Deployer.interact.showLp(zTimesLPtot);
+
+					// Deployer.interact.showLp(mulZ);
+
+					// Deployer.interact.showLp(z);
+
+					// Deployer.interact.showLp(z);
+
 					const LPtotPrime = LPtot + LPout;
+					Deployer.interact.showLp(LPtot);
+
+					Deployer.interact.showLp(LPtot);
+
 					alert('pays!');
+
 					transfer(LPout, lpTok).to(this);
 					return [LPtotPrime, AbalPrime, BbalPrime];
 				},
